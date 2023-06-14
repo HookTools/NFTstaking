@@ -18,126 +18,153 @@ CONTRACT nftstaking : public eosio::contract {
  public:
   nftstaking( name receiver, name code, datastream<const char*> ds ):
     contract(receiver, code, ds),
-    _users(receiver, receiver.value),
-    _config(receiver, receiver.value)
+    _assetid(receiver, receiver.value),
+    _config(receiver, receiver.value),
+    _stake(receiver, receiver.value)
     {}
 
 
     [[eosio::on_notify("atomicassets::transfer")]]
-    void transfertoken(name from,name to, uint64_t asset_ids, string memo){
-        auto itr_users = _users.find(from.value);
+    void transfernft(name from,name to, vector<uint64_t> asset_ids, string memo){
+        if (to != get_self() || from == get_self()) return;
 
-        uint64_t time = stoi(memo);
-        uint64_t current_time = current_time_point().sec_since_epoch();
-        auto itr_apy = _config.find(get_self().value);
-        double apy = 0;
-
-        for ( int i = 0; i < itr_apy->APY.size(); i++ ) {
-            if ( itr_apy->APY[i].locktime == time ) {
-                apy = itr_apy->APY[i].apy;
-            }
+      auto itr_stake = _stake.find(from.value);
+      if ( itr_stake == _stake.end()) {
+        _stake.emplace(get_self(), [&](auto& row) {
+          row.username = from;
+          row.assets = asset_ids;
+        });
+      } else {
+        vector<uint64_t> assets = itr_stake ->assets;
+        for( int i = 0; i < asset_ids.size(); i++) {
+          assets.push_back(asset_ids[i]);
         }
-        check ( apy != 0,"Locktime error");
-        if ( itr_users == _users.end() ) {
-
-            vector<stake_tokens> stake_tokens;
-            stake_tokens.push_back({
-                .locktime = current_time + time,
-                .starttime = current_time,
-                .token = quantity,
-                .apy = apy
-            });
-
-            _users.emplace(get_self(), [&](auto& row) {
-                row.username = from;
-                row.stake = stake_tokens;
-            });
-        } else {
-            _users.modify(itr_users, get_self(), [&](auto& row) {
-                row.stake.push_back({
-                    .locktime = current_time + time,
-                    .starttime = current_time,
-                    .token = quantity,
-                    .apy = apy
-                });
-            });
-        }
+        _stake.modify(itr_stake, get_self(), [&](auto& row) {
+          row.assets = assets;
+        });
+      }
     }
 
-    ACTION claim ( name username, uint64_t id ) {
+    ACTION claim ( name username, uint64_t asset_id ) {
         require_auth(username);
 
-        auto itr_users = _users.require_find(username.value,"Error with table find");
+        auto itr_assets = _assetid.require_find(asset_id,"Error with table find");
+        check (username == itr_assets->username,"Error with auth");
+      
         uint64_t current_time = current_time_point().sec_since_epoch();
-        check ( current_time < itr_users->stake[id].locktime,"Timelock error");
 
-        
+        auto itr_config = _config.require_find(itr_assets->stake[0].templates,"Error with table find");
+      
+        check ( current_time < itr_assets->stake[0].locktime,"Timelock error");
+
+        mint(itr_assets->stake[0].collection, itr_assets->stake[0].schema, itr_assets->stake[0].templates, username);
+        vector<uint64_t> return_;
+      return_.push_back(asset_id);
         action(
           permission_level{name(get_self()), name("active")},
-          tokencontract,
+          "atomicassets"_n,
           "transfer"_n,
-          make_tuple(get_self(), username,itr_users->stake[id].token , string("Claim tokens")))
+          make_tuple(get_self(), username,return_, string("Claim tokens")))
         .send();
+        _assetid.erase(itr_assets);
+      
     }
 
-    ACTION addapy( uint64_t locktime, double apy ) {
+    ACTION stakeasset(name username, uint64_t asset_id, uint32_t schema) {
+      require_auth(username);
+    }
+    ACTION addcofnig( uint64_t locktime, uint32_t template_, name collection,name schema,uint32_t templates ) {
         require_auth(get_self());
 
-        auto itr_config = _config.find(get_self().value);
+        auto itr_config = _config.find(template_);
 
         if ( itr_config == _config.end() ) {
             _config.emplace(get_self(), [&](auto& row) {
-                row.username = get_self();
-                row.APY.push_back({
+                row.templates = template_;
+                row.config.push_back({
                     .locktime = locktime,
-                    .apy = apy
+                    .collection = collection,
+                    .schema = schema,
+                    .templates = templates
                 });
             });
         } else {
             _config.modify(itr_config, get_self(), [&](auto& row) {
-                row.APY.push_back({
+                row.config.push_back({
                     .locktime = locktime,
-                    .apy = apy
+                    .collection = collection,
+                    .schema = schema,
+                    .templates = templates,
                 });
             });
         }
     }
-
  private:
 
-    struct stake_tokens
+    struct stake_nfts
     {   
         uint64_t locktime;
         uint64_t starttime;
-        asset token;
-        double apy;
+        
+        name collection;
+        name schema;
+        uint32_t templates;
     };
 
-    TABLE user {
+    TABLE assetid {
+        uint64_t asset_id;
         name username;
-        vector<stake_tokens> stake;
+        vector<stake_nfts> stake;
 
-        auto primary_key() const { return username.value; }
+        auto primary_key() const { return asset_id; }
       };
 
-    typedef multi_index<name("users"), user> users;
-    users _users;
+    typedef multi_index<name("assets"), assetid> assetids;
+    assetids _assetid;
 
-    struct token_apy
+
+    struct nft_config
     {   
         uint64_t locktime;
-        double apy;
+        
+        name collection;
+        name schema;
+        uint32_t templates;
     };
 
 
     TABLE config { 
-        name username;
-        vector<token_apy> APY;
+        uint32_t templates;
+        vector<nft_config> config;
         
-        auto primary_key() const { return username.value; }
+        auto primary_key() const { return templates; }
     };
 
     typedef multi_index<name("config"), config> configs;
     configs _config;
 
+  TABLE stake { 
+        name username;
+        vector<uint64_t> assets;
+        
+        auto primary_key() const { return username.value; }
+    };
+
+    typedef multi_index<name("stake"), stake> stakes;
+    stakes _stake;
+
+    void mint(name collection, name shemas, uint32_t templates,name owner) {
+        vector<name> data;
+        action{
+            permission_level{get_self(), "active"_n},
+            "atomicassets"_n,
+            "mintasset"_n,
+            std::make_tuple(get_self(),collection, shemas, templates, owner, data, data, data)
+        }.send();
+    }
 };
+
+
+
+
+
