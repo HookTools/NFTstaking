@@ -70,8 +70,36 @@ CONTRACT nftstaking : public eosio::contract {
       
     }
 
-    ACTION stakeasset(name username, uint64_t asset_id, uint32_t schema) {
+    ACTION stakeasset(name username, uint64_t asset_id, uint32_t templates) {
       require_auth(username);
+
+      auto itr_stake = _stake.require_find(username.value,"Error with table find");
+      bool checkasset = false;
+      for (int i = 0; i < itr_stake->assets.size();i++) {
+        if (asset_id == itr_stake->assets[i]){
+          checkasset = true;
+          break;
+        }
+      }
+      check(checkasset, "Invalid asset");
+
+      auto itr_config = _config.require_find(templates,"Error with table find");
+
+      uint64_t current_time = current_time_point().sec_since_epoch();
+      vector <stake_nfts> _nft_config = {};
+      
+      _nft_config.push_back({
+        .locktime = (current_time + itr_config->config[0].locktime),
+        .starttime = current_time,
+        .collection = itr_config->config[0].collection,
+        .schema = itr_config->config[0].schema,
+        .templates = itr_config->config[0].templates
+      });
+      _assetid.emplace(username, [&](auto& row) {
+          row.asset_id = asset_id;
+          row.username = username;
+        
+      });
     }
     ACTION addcofnig( uint64_t locktime, uint32_t template_, name collection,name schema,uint32_t templates ) {
         require_auth(get_self());
