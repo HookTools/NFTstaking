@@ -1,0 +1,203 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.2",
+    "types": [],
+    "structs": [
+        {
+            "name": "addcofnig",
+            "base": "",
+            "fields": [
+                {
+                    "name": "locktime",
+                    "type": "uint64"
+                },
+                {
+                    "name": "template_",
+                    "type": "uint32"
+                },
+                {
+                    "name": "collection",
+                    "type": "name"
+                },
+                {
+                    "name": "schema",
+                    "type": "name"
+                },
+                {
+                    "name": "templates",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "assetid",
+            "base": "",
+            "fields": [
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "username",
+                    "type": "name"
+                },
+                {
+                    "name": "stake",
+                    "type": "stake_nfts[]"
+                }
+            ]
+        },
+        {
+            "name": "claim",
+            "base": "",
+            "fields": [
+                {
+                    "name": "username",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "config",
+            "base": "",
+            "fields": [
+                {
+                    "name": "templates",
+                    "type": "uint32"
+                },
+                {
+                    "name": "config",
+                    "type": "nft_config[]"
+                }
+            ]
+        },
+        {
+            "name": "nft_config",
+            "base": "",
+            "fields": [
+                {
+                    "name": "locktime",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection",
+                    "type": "name"
+                },
+                {
+                    "name": "schema",
+                    "type": "name"
+                },
+                {
+                    "name": "templates",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "stake",
+            "base": "",
+            "fields": [
+                {
+                    "name": "username",
+                    "type": "name"
+                },
+                {
+                    "name": "assets",
+                    "type": "uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "stake_nfts",
+            "base": "",
+            "fields": [
+                {
+                    "name": "locktime",
+                    "type": "uint64"
+                },
+                {
+                    "name": "starttime",
+                    "type": "uint64"
+                },
+                {
+                    "name": "collection",
+                    "type": "name"
+                },
+                {
+                    "name": "schema",
+                    "type": "name"
+                },
+                {
+                    "name": "templates",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "stakeasset",
+            "base": "",
+            "fields": [
+                {
+                    "name": "username",
+                    "type": "name"
+                },
+                {
+                    "name": "asset_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "templates",
+                    "type": "uint32"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "addcofnig",
+            "type": "addcofnig",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "claim",
+            "type": "claim",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "stakeasset",
+            "type": "stakeasset",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "assets",
+            "type": "assetid",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "config",
+            "type": "config",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stake",
+            "type": "stake",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "kv_tables": {},
+    "ricardian_clauses": [],
+    "variants": [],
+    "action_results": []
+}
